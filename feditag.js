@@ -84,6 +84,15 @@ class FediTag extends HTMLElement {
         );
     }
 
+    escapeHtml(unsafe) {
+        return (unsafe || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     /** @param {HTMLDivElement} contents */
     removeTrailingHashtags(contents) {
         const para = contents.lastChild;
@@ -132,7 +141,7 @@ class FediTag extends HTMLElement {
             innerHTML: `
                 <span class="feditag-date">
                     <a href="${post.url}" target="_blank" class="feditag-post-link">
-                        <img src="external-link.svg" class="feditag-post-link">
+                        <img src="external-link.svg" class="feditag-post-link" />
                     </a>
                     <em>${dateStr}</em>
                 </span>
@@ -145,7 +154,10 @@ class FediTag extends HTMLElement {
         let poll = post.poll;
         if (poll) {
             poll.options.forEach((opt) => {
-                const percent = opt.votes_count / poll.votes_count;
+            const percent =
+                poll.votes_count === 0
+                    ? 0
+                    : opt.votes_count / poll.votes_count;
                 const percentText = `${Math.floor(percent * 100 + 0.5)}%`;
                 const optEle = Object.assign(document.createElement("div"), {
                     className: "feditag-poll",
@@ -163,7 +175,7 @@ class FediTag extends HTMLElement {
 
             const voteLink = poll.expired
                 ? "Poll closed"
-                : `<a href="${post.url}">Vote on Mastodon</a>`;
+                : `<a href="${post.url}" target="_blank">Vote on Mastodon</a>`;
             const vote = Object.assign(document.createElement("p"), {
                 innerHTML: `<em>${poll.votes_count} votes | ${voteLink}</em>`,
             });
@@ -195,19 +207,20 @@ class FediTag extends HTMLElement {
                         type === "gifv" ||
                         type === "video"
                     ) {
+                        const altText = this.escapeHtml(description);
                         let mediaHtml = "";
                         if (type === "image") {
                             mediaHtml = `
                             <div class="feditag-gallery-item">
-                                <a href="${url}" title="${description}">
-                                    <img src="${preview_url}" alt="${description}" width="${width}" height="${height}">
+                                <a href="${url}" title="${altText}">
+                                    <img src="${preview_url}" alt="${altText}" width="${width}" height="${height}" />
                                 </a>
                             </div>
                         `;
                         } else if (type === "gifv") {
                             mediaHtml = `
                             <div class="feditag-gallery-video">
-                                <video width="${width}" height="${height}" controls loop autoplay>
+                                <video width="${width}" height="${height}" controls loop autoplay aria-label="${altText}" title="${altText}">
                                     <source src="${url}">
                                     Your browser does not support the video element.
                                 </video>
@@ -216,7 +229,7 @@ class FediTag extends HTMLElement {
                         } else {
                             mediaHtml = `
                             <div class="feditag-gallery-video">
-                                <video width="${width}" height="${height}" controls>
+                                <video width="${width}" height="${height}" controls aria-label="${altText}" title="${altText}">
                                     <source src="${url}">
                                     Your browser does not support the video element.
                                 </video>
@@ -246,10 +259,12 @@ class FediTag extends HTMLElement {
                     let mediaHtml = "";
                     if (type === "audio") {
                         mediaHtml = `
-                        <p><audio controls>
-                            <source src="${url}">
-                            Your browser does not support the audio element.
-                        </audio></p>
+                        <p>
+                            <audio controls>
+                                <source src="${url}" />
+                                Your browser does not support the audio element.
+                            </audio>
+                        </p>
                     `;
                     } else {
                         mediaHtml = `
