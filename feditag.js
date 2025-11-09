@@ -102,9 +102,11 @@ class FediTag extends HTMLElement {
                 : (node.textContent ?? "").trim().length === 0,
         );
 
-        if (isOnlyHashtags) {
-            contents.removeChild(para);
+        if (!isOnlyHashtags) {
+            return;
         }
+
+        contents.removeChild(para);
     }
 
     /** @param {Post} post */
@@ -239,14 +241,16 @@ class FediTag extends HTMLElement {
 
                         const trimmedMediaHtml = mediaHtml.trim();
 
-                        if (trimmedMediaHtml !== "") {
-                            const div = Object.assign(
-                                document.createElement("div"),
-                                { innerHTML: trimmedMediaHtml },
-                            );
-
-                            gallery.appendChild(div.firstChild);
+                        if (trimmedMediaHtml === "") {
+                            return;
                         }
+
+                        const div = Object.assign(
+                            document.createElement("div"),
+                            { innerHTML: trimmedMediaHtml },
+                        );
+
+                        gallery.appendChild(div.firstChild);
                     }
                 },
             );
@@ -255,34 +259,38 @@ class FediTag extends HTMLElement {
 
             // audio and unknown (non-image gallery items)
             attachments.forEach(({ type, url }) => {
-                if (type !== "image" && type !== "gifv" && type !== "video") {
-                    let mediaHtml = "";
-                    if (type === "audio") {
-                        mediaHtml = `
-                        <p>
-                            <audio controls>
-                                <source src="${url}" />
-                                Your browser does not support the audio element.
-                            </audio>
-                        </p>
-                    `;
-                    } else {
-                        mediaHtml = `
-                        <p>Click to open media attachment: <a href="${url}">${url}</a></p>
-                    `;
-                    }
-
-                    const trimmedMediaHtml = mediaHtml.trim();
-
-                    if (trimmedMediaHtml !== "") {
-                        const div = Object.assign(
-                            document.createElement("div"),
-                            { innerHTML: trimmedMediaHtml },
-                        );
-
-                        gallery.appendChild(div.firstChild);
-                    }
+                if (type === "image" && type === "gifv" && type === "video") {
+                    return;
                 }
+
+                let mediaHtml = "";
+                if (type === "audio") {
+                    mediaHtml = `
+                    <p>
+                        <audio controls>
+                            <source src="${url}" />
+                            Your browser does not support the audio element.
+                        </audio>
+                    </p>
+                `;
+                } else {
+                    mediaHtml = `
+                    <p>Click to open media attachment: <a href="${url}">${url}</a></p>
+                `;
+                }
+
+                const trimmedMediaHtml = mediaHtml.trim();
+
+                if (trimmedMediaHtml === "") {
+                    return;
+                }
+
+                const div = Object.assign(
+                    document.createElement("div"),
+                    { innerHTML: trimmedMediaHtml },
+                );
+
+                gallery.appendChild(div.firstChild);
             });
         }
 
